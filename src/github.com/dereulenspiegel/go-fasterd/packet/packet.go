@@ -14,6 +14,6 @@ type Header interface {
 }
 
 type Packet interface {
-  Header() Header
   Marshall() []byte
+  Length() int
 }

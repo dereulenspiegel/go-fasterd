@@ -29,7 +29,7 @@ func(header PayloadHeader) Marshall() []byte {
   if(header.Length() > 1){
     sequenceBuf := make([]byte,6)
     binary.PutUvarint(sequenceBuf,header.sequenceNumber)
-    copy(buf[1:7], sequenceBuf)
+    copy(buf[1:8], sequenceBuf)
     copy(buf[8:23],header.authenticationTag)
   }
   return buf
@@ -38,6 +38,10 @@ func(header PayloadHeader) Marshall() []byte {
 type PayloadPacket struct {
   Header *PayloadHeader
   Payload []byte
+}
+
+func(packet PayloadPacket) Length() int {
+    return packet.Header.Length() + len(packet.Payload)
 }
 
 func(packet PayloadPacket) Marshall() []byte {
@@ -62,8 +66,12 @@ func UnmarshallPayloadPacket(buf []byte, nullMethod bool) (packet PayloadPacket,
     packet.Payload = buf[1:len(buf)-1]
   } else {
     header.flags = buf[1]
-    header.sequenceNumber,_ = binary.Uvarint(buf[2:7])
-    header.authenticationTag = buf[8:23]
+    sequenceNumber, n := binary.Uvarint(buf[2:8])
+    if n < 1 {
+      err = fmt.Errorf("Problem reading Uvarint")
+    }
+    header.sequenceNumber = sequenceNumber
+    header.authenticationTag = buf[8:24]
     packet.Payload = buf[24:]
   }
   return
