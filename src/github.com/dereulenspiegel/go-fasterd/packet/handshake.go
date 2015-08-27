@@ -68,12 +68,12 @@ func UnmarshallHandshakePacket(buf []byte)(packet HandshakePacket, err error) {
   }
   packet = HandshakePacket{
     Header: header,
-    TLVRecords: make([]TLVRecord,16),
   }
   for pointer := 4; pointer < int(tlvRecordLength) ; {
     typeValue, _ := binary.Uvarint(buf[pointer:pointer+2])
     lengthValue, _ := binary.Uvarint(buf[pointer+2:pointer+4])
     bodyBuf := make([]byte, lengthValue)
+    copy(bodyBuf,buf[pointer+4:(pointer+4+int(lengthValue))])
     record := TLVRecord{
       Type: TLVRecordType(typeValue),
       Length: uint16(lengthValue),
