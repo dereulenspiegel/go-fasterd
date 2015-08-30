@@ -29,7 +29,7 @@ func createPayloadWithInvalidHeader() []byte {
 func TestUnmarshallWithInvalidPacketType(t *testing.T) {
   assert := assert.New(t)
   invalidPacket := createPayloadWithInvalidHeader()
-  _, err := UnmarshallPayloadPacket(invalidPacket, false)
+  _, err := UnmarshallPayloadPacket(invalidPacket, nil, false)
 
   assert.NotNil(err)
 }
@@ -38,12 +38,12 @@ func TestUnmarshallValidPayloadPacket(t *testing.T){
   assert := assert.New(t)
 
   validPacket := createValidPayload()
-  packet, err := UnmarshallPayloadPacket(validPacket, false)
+  packet, err := UnmarshallPayloadPacket(validPacket, nil, false)
   assert.Nil(err)
   assert.NotNil(packet)
-  assert.Equal(byte(0x0), packet.Header.flags)
-  assert.Equal(PAYLOAD_PACKET_TYPE, packet.Header.PacketType())
-  assert.Equal(uint64(5), packet.Header.sequenceNumber)
-  assert.Equal(24, packet.Header.Length())
+  assert.Equal(byte(0x0), packet.header.flags)
+  assert.Equal(PAYLOAD_PACKET_TYPE, packet.header.PacketType())
+  assert.Equal(uint64(5), packet.header.sequenceNumber)
+  assert.Equal(24, packet.header.Length())
   assert.Equal(int(1024+24),packet.Length())
 }

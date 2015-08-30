@@ -19,12 +19,12 @@ func createValidPacket() []byte {
 func TestUnmarshallHandshake(t *testing.T) {
   assert := assert.New(t)
   validPacket := createValidPacket()
-  packet, err := UnmarshallHandshakePacket(validPacket)
+  packet, err := UnmarshallHandshakePacket(validPacket, nil)
 
   assert.Nil(err)
   assert.NotNil(packet)
   assert.Equal(1, len(packet.TLVRecords))
-  assert.Equal(uint16(5), packet.Header.tlvRecordLength)
+  assert.Equal(uint16(5), packet.header.tlvRecordLength)
   assert.Equal(HandshakeType, packet.TLVRecords[0].Type)
   assert.Equal(uint16(1), packet.TLVRecords[0].Length)
   assert.Equal(byte(1), packet.TLVRecords[0].Body[0])

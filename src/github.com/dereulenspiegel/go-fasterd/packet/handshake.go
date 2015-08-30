@@ -3,21 +3,22 @@ package packet
 import (
   "encoding/binary"
   "fmt"
+  "net"
 )
 
 type HandshakeHeader struct {
   tlvRecordLength uint16
 }
 
-func (header HandshakeHeader) PacketType() PacketType {
+func (header *HandshakeHeader) PacketType() PacketType {
   return HANDSHAKE_PACKET_TYPE
 }
 
-func (header HandshakeHeader) Length() int{
+func (header *HandshakeHeader) Length() int{
   return 4
 }
 
-func (header HandshakeHeader) Marshall() []byte {
+func (header *HandshakeHeader) Marshall() []byte {
   buf := make([]byte,4)
   buf[0] = byte(HANDSHAKE_PACKET_TYPE)
   buf[1] = 0x00
@@ -26,13 +27,22 @@ func (header HandshakeHeader) Marshall() []byte {
 }
 
 type HandshakePacket struct {
-  Header HandshakeHeader
+  header *HandshakeHeader
   TLVRecords []TLVRecord
+  peerAddr *net.UDPAddr
 }
 
-func (packet HandshakePacket) Marshall() []byte {
-  headerBuf := packet.Header.Marshall()
-  recordsBuf := make([]byte, packet.Header.tlvRecordLength)
+func (packet HandshakePacket) PeerAddress() *net.UDPAddr{
+  return packet.peerAddr
+}
+
+func (packet *HandshakePacket) Header() Header {
+  return packet.header
+}
+
+func (packet *HandshakePacket) Marshall() []byte {
+  headerBuf := packet.header.Marshall()
+  recordsBuf := make([]byte, packet.header.tlvRecordLength)
 
   var pointer uint16 = 0
   for _, record := range packet.TLVRecords {
@@ -48,26 +58,27 @@ func (packet HandshakePacket) Marshall() []byte {
 }
 
 func (packet HandshakePacket)Length() int {
-  return packet.Header.Length() + int(packet.Header.tlvRecordLength)
+  return packet.header.Length() + int(packet.header.tlvRecordLength)
 }
 
 func (packet *HandshakePacket) AddTLVRecord(record TLVRecord) {
   length := record.Length + 4
   packet.TLVRecords = append(packet.TLVRecords, record)
-  packet.Header.tlvRecordLength = packet.Header.tlvRecordLength + length
+  packet.header.tlvRecordLength = packet.header.tlvRecordLength + length
 }
 
-func UnmarshallHandshakePacket(buf []byte)(packet HandshakePacket, err error) {
+func UnmarshallHandshakePacket(buf []byte, addr *net.UDPAddr)(packet *HandshakePacket, err error) {
   if buf[0] != byte(HANDSHAKE_PACKET_TYPE) {
     err = fmt.Errorf("Invalid packet type %d", buf[0])
     return
   }
   tlvRecordLength, _ := binary.Uvarint(buf[2:4])
-  header := HandshakeHeader{
+  header := &HandshakeHeader{
     tlvRecordLength: uint16(tlvRecordLength),
   }
-  packet = HandshakePacket{
-    Header: header,
+  packet = &HandshakePacket{
+    header: header,
+    peerAddr: addr,
   }
   for pointer := 4; pointer < int(tlvRecordLength) ; {
     typeValue, _ := binary.Uvarint(buf[pointer:pointer+2])

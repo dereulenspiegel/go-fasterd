@@ -3,6 +3,7 @@ package packet
 import (
   "fmt"
   "encoding/binary"
+  "net"
 )
 
 type PayloadHeader struct {
@@ -36,29 +37,38 @@ func(header PayloadHeader) Marshall() []byte {
 }
 
 type PayloadPacket struct {
-  Header *PayloadHeader
+  header *PayloadHeader
   Payload []byte
+  peerAddr *net.UDPAddr
+}
+
+func (packet PayloadPacket) PeerAddress() *net.UDPAddr {
+  return packet.peerAddr
+}
+
+func (packet PayloadPacket) Header() Header {
+  return packet.header
 }
 
 func(packet PayloadPacket) Length() int {
-    return packet.Header.Length() + len(packet.Payload)
+    return packet.header.Length() + len(packet.Payload)
 }
 
 func(packet PayloadPacket) Marshall() []byte {
-  totalSize := packet.Header.Length() + len(packet.Payload)
+  totalSize := packet.header.Length() + len(packet.Payload)
   buf := make([]byte, totalSize)
-  copy(buf[0:packet.Header.Length()-1],packet.Header.Marshall())
-  copy(buf[packet.Header.Length():],packet.Payload)
+  copy(buf[0:packet.header.Length()-1],packet.header.Marshall())
+  copy(buf[packet.header.Length():],packet.Payload)
   return buf
 }
 
-func UnmarshallPayloadPacket(buf []byte, nullMethod bool) (packet PayloadPacket,err error) {
+func UnmarshallPayloadPacket(buf []byte, addr *net.UDPAddr, nullMethod bool) (packet PayloadPacket,err error) {
   if buf[0] != byte(PAYLOAD_PACKET_TYPE) {
     err = fmt.Errorf("Invalid packet type %d ",buf[0])
     return
   }
   header := &PayloadHeader{}
-  packet = PayloadPacket{Header: header}
+  packet = PayloadPacket{header: header}
   if(nullMethod){
     header.flags = 0x00
     header.sequenceNumber = 0
@@ -73,6 +83,7 @@ func UnmarshallPayloadPacket(buf []byte, nullMethod bool) (packet PayloadPacket,
     header.sequenceNumber = sequenceNumber
     header.authenticationTag = buf[8:24]
     packet.Payload = buf[24:]
+    packet.peerAddr = addr
   }
   return
 }

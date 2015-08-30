@@ -3,6 +3,7 @@ package main
 import (
   "fmt"
   "net"
+  "github.com/dereulenspiegel/go-fasterd/pipeline"
 )
 
 const MAX_PACKET_SIZE uint32 = 8192
@@ -13,6 +14,11 @@ type Server struct {
 
 func NewServer(port int)(server *Server){
   return &Server{port: port}
+}
+
+func createReceivePipeline() *pipeline.PacketPipeline {
+  pipeline := pipeline.NewPacketPipeline()
+  return pipeline
 }
 
 func (server *Server) Listen() (err error){
