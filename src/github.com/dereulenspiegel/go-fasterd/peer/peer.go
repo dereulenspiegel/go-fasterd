@@ -6,7 +6,7 @@ import (
   "github.com/dereulenspiegel/go-fasterd/method"
 )
 
-var GlobalPeerState map[*net.UDPAddr]PeerState
+var GlobalPeerState map[*net.UDPAddr]*PeerState
 
 var seqLock sync.Mutex
 var peerIdSequence uint64

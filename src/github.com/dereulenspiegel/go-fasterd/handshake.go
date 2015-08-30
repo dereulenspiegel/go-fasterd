@@ -3,6 +3,7 @@ package main
 import (
   "github.com/dereulenspiegel/go-fasterd/packet"
   "github.com/dereulenspiegel/go-fasterd/pipeline"
+  "github.com/dereulenspiegel/go-fasterd/peer"
 )
 
 type HandshakePipe struct {
@@ -25,5 +26,9 @@ func (pipe *HandshakePipe) Process(in chan packet.Packet) chan packet.Packet {
 }
 
 func (pipe *HandshakePipe) ProcessHandshake(pkg packet.Packet) {
-
+  peerState, exists := peer.GlobalPeerState[pkg.PeerAddress()]
+  if !exists {
+    peerState = &peer.PeerState{}
+  }
+  
 }

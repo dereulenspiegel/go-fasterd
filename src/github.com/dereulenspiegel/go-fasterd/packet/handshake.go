@@ -28,7 +28,7 @@ func (header *HandshakeHeader) Marshall() []byte {
 
 type HandshakePacket struct {
   header *HandshakeHeader
-  TLVRecords []TLVRecord
+  TLVRecords map[TLVRecordType]*TLVRecord
   peerAddr *net.UDPAddr
 }
 
@@ -61,9 +61,9 @@ func (packet HandshakePacket)Length() int {
   return packet.header.Length() + int(packet.header.tlvRecordLength)
 }
 
-func (packet *HandshakePacket) AddTLVRecord(record TLVRecord) {
+func (packet *HandshakePacket) AddTLVRecord(record *TLVRecord) {
   length := record.Length + 4
-  packet.TLVRecords = append(packet.TLVRecords, record)
+  packet.TLVRecords[record.Type] = record
   packet.header.tlvRecordLength = packet.header.tlvRecordLength + length
 }
 
@@ -79,18 +79,19 @@ func UnmarshallHandshakePacket(buf []byte, addr *net.UDPAddr)(packet *HandshakeP
   packet = &HandshakePacket{
     header: header,
     peerAddr: addr,
+    TLVRecords: make(map[TLVRecordType]*TLVRecord),
   }
   for pointer := 4; pointer < int(tlvRecordLength) ; {
     typeValue, _ := binary.Uvarint(buf[pointer:pointer+2])
     lengthValue, _ := binary.Uvarint(buf[pointer+2:pointer+4])
     bodyBuf := make([]byte, lengthValue)
     copy(bodyBuf,buf[pointer+4:(pointer+4+int(lengthValue))])
-    record := TLVRecord{
+    record := &TLVRecord{
       Type: TLVRecordType(typeValue),
       Length: uint16(lengthValue),
       Body: bodyBuf,
     }
-    packet.TLVRecords = append(packet.TLVRecords, record)
+    packet.TLVRecords[record.Type] = record
     pointer = pointer + int(lengthValue) + 4
   }
   return
